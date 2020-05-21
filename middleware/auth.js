@@ -1,0 +1,40 @@
+const jwt = require('jsonwebtoken');
+const asyncHandler = require('./async');
+const ErrorResponse = require('../utils/errorResponse');
+const User = require('../models/User');
+
+// protect routes
+exports.protect = asyncHandler(async (req, res, next) => {
+  let token;
+
+  // check headers
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    // turn the req value into an array to grab only the token
+    // split at the space
+    token = req.headers.authorization.split(' ')[1];
+  }
+  //   else if(req.cookies.token){
+  //     token = req.cookies.token
+  //   }
+
+  // make sure token exists
+  if (!token) {
+    return next(new ErrorResponse(`Not authorized to access this route`, 401));
+  }
+
+  // if token exists, verify it
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+
+    console.log(decodedToken);
+
+    // currently logged in user
+    req.user = await User.findById(decodedToken.id);
+    next();
+  } catch (err) {
+    return next(new ErrorResponse(`Not authorized to access this route`, 401));
+  }
+});
