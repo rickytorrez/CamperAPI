@@ -46,6 +46,11 @@ exports.getCourse = asyncHandler(async (req, res, next) => {
 exports.addCourse = asyncHandler(async (req, res, next) => {
   // get the bootcampId and submitted as a body field
   req.body.bootcamp = req.params.bootcampId;
+
+  // get the userId and put it on the body
+  req.body.user = req.user.id;
+
+  // find the bootcamp by id
   const bootcamp = await Bootcamp.findById(req.params.bootcampId);
 
   if (!bootcamp) {
@@ -56,6 +61,17 @@ exports.addCourse = asyncHandler(async (req, res, next) => {
       )
     );
   }
+
+  // check if bootcamp owner is the user that is logged in
+  if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to add a course to ${bootcamp._id}`,
+        401
+      )
+    );
+  }
+
   // req.body also includes the req.body.bootcamp
   const course = await Course.create(req.body);
 

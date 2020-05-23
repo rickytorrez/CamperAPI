@@ -28,9 +28,6 @@ exports.protect = asyncHandler(async (req, res, next) => {
   // if token exists, verify it
   try {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-
-    console.log(decodedToken);
-
     // currently logged in user
     req.user = await User.findById(decodedToken.id);
     next();
@@ -38,3 +35,18 @@ exports.protect = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse(`Not authorized to access this route`, 401));
   }
 });
+
+// grant access to specific roles
+exports.authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new ErrorResponse(
+          `Role of ${req.user.role} is not authorized to access this route`,
+          403
+        )
+      );
+    }
+    next();
+  };
+};
